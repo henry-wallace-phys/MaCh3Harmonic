@@ -7,6 +7,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import harmonic as hm
 from logging import getLogger
 
+from mach3_harmonic.file_io.chain_reader import filter_keys
 from mach3_harmonic.stats.evidence import batched_sample, PREDICT_BATCH
 
 from getdist import MCSamples, plots
@@ -211,14 +212,26 @@ def plot_flow_vs_chain(
 
 def plot_flow(model, chains: hm.Chains | np.ndarray, param_names, param_labels,
               plot_name: str, title: str | None = None, n_max: int = 100_000,
-              seed: int = 0, sample_batch_size: int = PREDICT_BATCH):
-    """Triangle + 1D comparison of the flow against a chain (flat or hm.Chains)."""
+              seed: int = 0, sample_batch_size: int = PREDICT_BATCH,
+              pars_to_ignore: list[str] | None = None):
+    """Triangle + 1D comparison of the flow against a chain (flat or hm.Chains).
+
+    Parameters matching a wildcard in pars_to_ignore are left out of the plots
+    only; the flow is still sampled in every dimension.
+    """
     chain_flat = np.asarray(chains.samples if isinstance(chains, hm.Chains) else chains)
     chain_flat = chain_flat.reshape(-1, chain_flat.shape[-1])
     flow_samples = batched_sample(model, min(n_max, len(chain_flat)),
                                   jax.random.PRNGKey(seed), batch_size=sample_batch_size)
 
+    param_names = list(param_names)
+    kept = set(filter_keys(param_names, pars_to_ignore or []))
+    keep = [i for i, n in enumerate(param_names) if n in kept]
+    if not keep:
+        raise ValueError(f"Plotting.pars_to_ignore {pars_to_ignore} removes every parameter")
+
     plot_flow_vs_chain(
-        chain_flat, flow_samples, param_names, param_labels, plot_name,
+        chain_flat[:, keep], flow_samples[:, keep],
+        [param_names[i] for i in keep], [list(param_labels)[i] for i in keep], plot_name,
         title=title, flow_label=f"Normalising flow (T = {model.temperature})",
     )

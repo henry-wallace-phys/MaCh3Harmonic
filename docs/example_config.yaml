@@ -47,6 +47,8 @@ Evidence:
     n_samples: 1000000
 
 Plotting:
+    pars_to_ignore:     # left out of the plots only; the flow still uses them
+        - xsec_*
     cis: [0.68, 0.95, 0.996]
     flow_label: "Normalising Flow"
 

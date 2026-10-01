@@ -118,4 +118,10 @@ The flow is a rational-quadratic spline flow (5 hidden layers of 64 units, 20 bi
 | `cut_value` | Value that separates them |
 | `labels` | Names of the regions, below the cut first. Defaults to the cut expressions. |
 
-The example config also has `Flows.ensemble`, `Evidence.seed`, `Evidence.n_samples` and `Plotting` sections. None of these are used yet.
+### `Plotting`
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `pars_to_ignore` | `[]` | Parameters to leave out of the triangle and 1D plots. Wildcards work the same way as in `Chains.pars_to_ignore`. The flow is still trained and evaluated on these parameters. |
+
+The example config also has `Flows.ensemble`, `Evidence.seed`, `Evidence.n_samples`, `Plotting.cis` and `Plotting.flow_label`. None of these are used yet.

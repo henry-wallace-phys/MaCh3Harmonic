@@ -24,6 +24,7 @@ def single_flow_comp_cmd(yaml_config: dict):
     cut_labels =  single_flow_settings.get('labels', cut_values)
 
     chain = next(iter(load_chain(yaml_config, chain_label).values()))
+    plot_pars_to_ignore = (yaml_config.get("Plotting") or {}).get("pars_to_ignore", [])
 
     evidence_list = []
     
@@ -35,7 +36,8 @@ def single_flow_comp_cmd(yaml_config: dict):
                   chains = infer_chain,
                   param_names=chain.param_names,
                   param_labels=chain.param_names,
-                  plot_name=f"{l}.pdf"
+                  plot_name=f"{l}.pdf",
+                  pars_to_ignore=plot_pars_to_ignore,
                 )
         
         save_flow(model, f"{l}.flow", train_chain)
