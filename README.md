@@ -37,10 +37,10 @@ Splits one chain into two regions on a single parameter and computes the Bayes f
 
 1. Loads the steps with `delm2_23 < 0`. A flow is trained on the first half of them and the evidence Z_IO is computed from the second half.
 2. Does the same for `delm2_23 > 0` to get Z_NO.
-3. Logs the harmonic Bayes factor Z_NO / Z_IO with its error.
-4. Logs the MCMC Bayes factor N(`delm2_23 > 0`) / N(`delm2_23 < 0`). Its error accounts for autocorrelation in the chain.
+3. Logs the harmonic ln Bayes factor ln(Z_NO / Z_IO) with its error.
+4. Logs the MCMC ln Bayes factor ln(N(`delm2_23 > 0`) / N(`delm2_23 < 0`)). Its error accounts for autocorrelation in the chain.
 
-`labels` names the two regions, below the cut first. Each Bayes factor is reported as second label / first label.
+`labels` names the two regions, below the cut first. Each ln Bayes factor is reported as ln(second label / first label).
 
 Files written to the working directory for each label:
 

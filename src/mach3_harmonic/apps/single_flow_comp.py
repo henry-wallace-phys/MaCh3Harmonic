@@ -50,7 +50,7 @@ def single_flow_comp_cmd(yaml_config: dict):
     
     # Now we can look at the Bayes factors
     mcmc_bayes = mcmc_bayes_factor(chain, param_to_cut, cut_value)
-    bayes, bayes_err = hm.evidence.ln_bayes_factor(evidence_list[1], evidence_list[0])
+    bayes, bayes_err = hm.evidence.compute_ln_bayes_factor(evidence_list[1], evidence_list[0])
     
     
     ratio = f"{cut_labels[1]}/{cut_labels[0]}"

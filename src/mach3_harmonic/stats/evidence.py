@@ -8,7 +8,11 @@ import numpy as np
 import harmonic as hm
 import jax
 import jax.numpy as jnp
+import warnings
+from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
+
+warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 from matplotlib import pyplot as plt
 
 

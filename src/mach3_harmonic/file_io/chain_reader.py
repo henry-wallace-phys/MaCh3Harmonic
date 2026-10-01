@@ -4,7 +4,11 @@ from logging import getLogger
 import uproot as ur
 import numpy as np
 from fnmatch import fnmatchcase
+import warnings
+from tqdm import TqdmExperimentalWarning
 from tqdm.rich import tqdm
+
+warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 
 LARGE_LOGL = 1234567
 CYCLICAL_SHIFTS = (-np.pi,np.pi)
