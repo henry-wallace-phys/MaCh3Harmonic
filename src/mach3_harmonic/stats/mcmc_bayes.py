@@ -27,7 +27,7 @@ def integrated_autocorr_time(x: np.ndarray, c: float = 5.0) -> float:
 
 
 def mcmc_bayes_factor(chain_reader: ChainReader, bayes_factor_var: str, cut_val: float):
-    '''We're doing a simple var>cut_val. Burn-in and thinning come from chain_reader.'''
+    '''ln BF of var>cut_val over var<cut_val from step counts. Burn-in and thinning come from chain_reader.'''
     chain = chain_reader.get_single_branch(bayes_factor_var)
     
     n = len(chain)
@@ -42,15 +42,15 @@ def mcmc_bayes_factor(chain_reader: ChainReader, bayes_factor_var: str, cut_val:
                          "cannot estimate the Bayes factor from step counts.")
     
     p = n_above_cut/n
-    bf = n_above_cut/n_below_cut
+    ln_bf = np.log(n_above_cut) - np.log(n_below_cut)
     
     tau = integrated_autocorr_time(above_cut)
     
     n_eff = n / tau
 
-    sigma_p = np.sqrt(p * (1 - p) / n_eff)
-    sigma_bf = sigma_p / (1 - p) ** 2
-    sigma_bf_iid = sigma_p * np.sqrt(tau) / (1 - p) ** 2  # ignoring correlations
+    # ln BF = ln(p / (1 - p)), so sigma_lnBF = sigma_p / (p (1 - p))
+    sigma_ln_bf = np.sqrt(p * (1 - p) / n_eff) / (p * (1 - p))
+    sigma_ln_bf_iid = np.sqrt(p * (1 - p) / n) / (p * (1 - p))  # ignoring correlations
 
     if n < 50 * tau:
         getLogger().warning(f"WARNING: chain length ({n}) < 50 x tau ({tau:.1f}); the ordering "
@@ -58,9 +58,9 @@ def mcmc_bayes_factor(chain_reader: ChainReader, bayes_factor_var: str, cut_val:
               "MCMC Bayes factor error is likely underestimated.")
 
     return {
-        "bayes_factor": bf,
-        "error": sigma_bf,
-        "error_iid": sigma_bf_iid,
+        "ln_bayes_factor": ln_bf,
+        "error": sigma_ln_bf,
+        "error_iid": sigma_ln_bf_iid,
         "tau": tau,
         "n_eff": n_eff,
         "n_no": n_above_cut,

@@ -4,6 +4,7 @@ from .evidence import (
     load_flow,
     train_model,
     get_evidence,
+    ln_bayes_factor,
     sample_evidence_weighted_flows   
 )
 
@@ -15,6 +16,7 @@ __all__ = [
     "load_flow",
     "train_model",
     "get_evidence",
+    "ln_bayes_factor",
     "sample_evidence_weighted_flows",
     "mcmc_bayes_factor"   
 ]

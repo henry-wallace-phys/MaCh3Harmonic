@@ -225,6 +225,21 @@ def get_evidence(model, chains_infer: hm.Chains, shift: float = hm.evidence.Shif
     return ev
 
 
+def ln_bayes_factor(ev1: hm.Evidence, ev2: hm.Evidence) -> tuple[float, float]:
+    """ln(Z_1 / Z_2) and its 1-sigma error, without leaving log space.
+
+    harmonic's compute_ln_bayes_factor exponentiates ln(1/Z), which overflows for
+    large |ln L|, and its second return value is ln(sigma_BF) rather than the error
+    on ln BF. Here sigma_lnBF^2 = (sigma_1/rho_1)^2 + (sigma_2/rho_2)^2, with
+    rho = 1/Z and the relative variances formed in log space. The log1p term is
+    harmonic's second-order correction for estimating Z_1 = 1/rho_1.
+    """
+    rel_var_1, rel_var_2 = (np.exp(ev.ln_evidence_inv_var - 2.0 * ev.ln_evidence_inv)
+                            for ev in (ev1, ev2))
+    ln_bf = ev2.ln_evidence_inv - ev1.ln_evidence_inv + np.log1p(rel_var_1)
+    return float(ln_bf), float(np.sqrt(rel_var_1 + rel_var_2))
+
+
 def sample_evidence_weighted_flows(
     model_no, model_io,
     ln_z_no: float, ln_z_io: float,
