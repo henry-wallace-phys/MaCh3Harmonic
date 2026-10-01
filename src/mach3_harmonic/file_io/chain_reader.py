@@ -4,6 +4,7 @@ from logging import getLogger
 import uproot as ur
 import numpy as np
 from fnmatch import fnmatchcase
+from tqdm.rich import tqdm
 
 LARGE_LOGL = 1234567
 CYCLICAL_SHIFTS = (-np.pi,np.pi)
@@ -102,19 +103,22 @@ class ChainReader:
     def _n_after_burn_in(self) -> int:
         return self._chain.num_entries - self.burn_in
 
-    def _iterate(self, branches: list[str] | None = None, expressions: list[str] | None = None):
+    def _iterate(self, branches: list[str] | None = None, expressions: list[str] | None = None,
+                 desc: str = "Reading chain"):
         """Yield (arrays, slice over post-burn-in entries) one chunk at a time."""
         kwargs = {}
         if branches is not None:
             wanted = set(branches)
             kwargs["filter_name"] = lambda name: name in wanted  # exact match, no globbing
 
-        for arrays, report in self._chain.iterate(
-            expressions, library="np", step_size=self.step_size,
-            entry_start=self.burn_in, report=True, **kwargs,
-        ):
-            yield arrays, slice(report.tree_entry_start - self.burn_in,
-                                report.tree_entry_stop - self.burn_in)
+        with tqdm(total=self._n_after_burn_in, desc=desc, unit=" steps") as progress:
+            for arrays, report in self._chain.iterate(
+                expressions, library="np", step_size=self.step_size,
+                entry_start=self.burn_in, report=True, **kwargs,
+            ):
+                yield arrays, slice(report.tree_entry_start - self.burn_in,
+                                    report.tree_entry_stop - self.burn_in)
+                progress.update(report.tree_entry_stop - report.tree_entry_start)
 
     def _entry_mask(self, cut: str | None) -> np.ndarray | None:
         """Boolean mask over post-burn-in entries for thinning and the cut.
@@ -128,14 +132,14 @@ class ChainReader:
         mask = np.zeros(self._n_after_burn_in, dtype=bool)
         mask[::self.thin] = True
         if cut is not None:
-            for arrays, entries in self._iterate(expressions=[cut]):
+            for arrays, entries in self._iterate(expressions=[cut], desc=f"Applying cut {cut}"):
                 mask[entries] &= next(iter(arrays.values())).astype(bool)
         return mask
 
-    def _stream(self, branches: list[str], mask: np.ndarray | None):
+    def _stream(self, branches: list[str], mask: np.ndarray | None, desc: str = "Loading chain"):
         """Yield (selected arrays, slice into the output) one chunk at a time."""
         pos = 0
-        for arrays, entries in self._iterate(branches):
+        for arrays, entries in self._iterate(branches, desc=desc):
             if mask is not None:
                 chunk_mask = mask[entries]
                 arrays = {k: v[chunk_mask] for k, v in arrays.items()}
@@ -150,7 +154,7 @@ class ChainReader:
         if not pars:
             return {}
         counts = {par: np.zeros(CIRCULAR_NBINS) for par in pars}
-        for arrays, _ in self._iterate(pars):
+        for arrays, _ in self._iterate(pars, desc="Finding cyclical shifts"):
             for par in pars:
                 counts[par] += np.histogram(arrays[par], bins=CIRCULAR_NBINS, range=CYCLICAL_SHIFTS)[0]
         return {par: circular_mode(c, *CYCLICAL_SHIFTS) for par, c in counts.items()}
@@ -184,7 +188,7 @@ class ChainReader:
 
         mask = self._entry_mask(cut)
         branch = np.empty(self._n_selected(mask))
-        for arrays, out in self._stream([branch_name], mask):
+        for arrays, out in self._stream([branch_name], mask, desc=f"Loading {branch_name}"):
             branch[out] = arrays[branch_name]
         return branch
 
