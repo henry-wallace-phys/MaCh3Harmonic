@@ -43,6 +43,7 @@ Flows:
 
 Evidence:
     seed: 0
+    predict_batch_size: 10000  # samples per flow evaluation; lower if the GPU runs out of memory
     n_samples: 1000000
 
 Plotting:

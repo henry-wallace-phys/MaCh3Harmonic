@@ -6,6 +6,7 @@ import harmonic as hm
 
 from mach3_harmonic.file_io import ChainReader
 from mach3_harmonic.stats import train_model, mach3_to_chain, get_evidence
+from mach3_harmonic.stats.evidence import PREDICT_BATCH
 
 _DEFAULT_GLOBAL_CHAIN = {
     "pars_to_ignore": [],
@@ -110,8 +111,8 @@ def run_inference(yaml_config, chain: ChainReader, cut: str|None, override_loss_
     
     model = train_flow(yaml_config, train_chain, ndim = chain.ndim, override_loss_plot=override_loss_plot)
     
-    # Now we get the evidence 
-    evidence = get_evidence(model, infer_chain)
-    evidence.add_chains(infer_chain)
+    # Now we get the evidence (get_evidence already adds infer_chain)
+    predict_batch_size = (yaml_config.get("Evidence") or {}).get("predict_batch_size", PREDICT_BATCH)
+    evidence = get_evidence(model, infer_chain, predict_batch_size=predict_batch_size)
     
     return train_chain, infer_chain, model, evidence

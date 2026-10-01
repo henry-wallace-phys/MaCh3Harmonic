@@ -12,7 +12,7 @@ from tqdm.rich import tqdm
 from matplotlib import pyplot as plt
 
 
-PREDICT_BATCH = 50_000
+PREDICT_BATCH = 10_000  # flow intermediates scale with batch * ndim * n_bins; lower if the GPU OOMs
 FLOW_FORMAT_VERSION = 1
 
 
@@ -201,9 +201,10 @@ def _batch_predict(model, batch_size: int = PREDICT_BATCH):
     return model
 
 
-def get_evidence(model, chains_infer: hm.Chains, shift: float = 0.01) -> hm.Evidence:
+def get_evidence(model, chains_infer: hm.Chains, shift: float = 0.01,
+                 predict_batch_size: int = PREDICT_BATCH) -> hm.Evidence:
     """Evidence from a trained (or loaded) flow on the held-out chains."""
-    _batch_predict(model)
+    _batch_predict(model, predict_batch_size)
     ev = hm.Evidence(chains_infer.nchains, model, shift=shift)
     ev.add_chains(chains_infer)
 

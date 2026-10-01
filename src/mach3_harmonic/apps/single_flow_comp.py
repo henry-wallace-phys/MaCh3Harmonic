@@ -46,5 +46,6 @@ def single_flow_comp_cmd(yaml_config: dict):
     bayes, bayes_err = hm.evidence.compute_bayes_factor(evidence_list[1], evidence_list[0])
     
     
-    getLogger().info(f"Harmonic Approximation BF ({l[1]}/{l[0]}): {bayes}±{bayes_err}")
-    getLogger().info(f"MCMC (Ratio) BF ({l[1]}/{l[0]}): {mcmc_bayes['bayes_factor']}±{mcmc_bayes['error']}")
+    ratio = f"{cut_labels[1]}/{cut_labels[0]}"
+    getLogger().info(f"Harmonic Approximation BF ({ratio}): {bayes}±{bayes_err}")
+    getLogger().info(f"MCMC (Ratio) BF ({ratio}): {mcmc_bayes['bayes_factor']}±{mcmc_bayes['error']}")
