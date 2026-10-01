@@ -201,6 +201,18 @@ def _batch_predict(model, batch_size: int = PREDICT_BATCH):
     return model
 
 
+def batched_sample(model, n: int, rng_key, batch_size: int = PREDICT_BATCH) -> np.ndarray:
+    """Draw n flow samples in chunks so large draws fit in GPU memory.
+
+    Each chunk gets its own key, otherwise every chunk would repeat the same draws.
+    """
+    keys = jax.random.split(rng_key, max(1, -(-n // batch_size)))
+    return np.concatenate([
+        np.asarray(model.sample(min(batch_size, n - i), rng_key=key))
+        for i, key in zip(range(0, n, batch_size), keys)
+    ]) if n > 0 else np.empty((0, model.ndim))
+
+
 def get_evidence(model, chains_infer: hm.Chains, shift: float = 0.01,
                  predict_batch_size: int = PREDICT_BATCH) -> hm.Evidence:
     """Evidence from a trained (or loaded) flow on the held-out chains."""
@@ -246,7 +258,7 @@ def sample_evidence_weighted_flows(
     def draw(model, n, sign, name, key):
         if n == 0:
             return None
-        s = np.asarray(model.sample(int(np.ceil(oversample * n)), rng_key=key))
+        s = batched_sample(model, int(np.ceil(oversample * n)), key)
         if ordering_idx is not None:
             keep = np.sign(s[:, ordering_idx]) == sign
             getLogger().warning(f"{name} flow: {1 - keep.mean():.2%} of samples leaked across the ordering boundary")

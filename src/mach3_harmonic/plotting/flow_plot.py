@@ -7,6 +7,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 import harmonic as hm
 from logging import getLogger
 
+from mach3_harmonic.stats.evidence import batched_sample, PREDICT_BATCH
+
 from getdist import MCSamples, plots
 
 COLOUR_MACH3 = "#56B4E9"
@@ -209,12 +211,12 @@ def plot_flow_vs_chain(
 
 def plot_flow(model, chains: hm.Chains | np.ndarray, param_names, param_labels,
               plot_name: str, title: str | None = None, n_max: int = 100_000,
-              seed: int = 0):
+              seed: int = 0, sample_batch_size: int = PREDICT_BATCH):
     """Triangle + 1D comparison of the flow against a chain (flat or hm.Chains)."""
     chain_flat = np.asarray(chains.samples if isinstance(chains, hm.Chains) else chains)
     chain_flat = chain_flat.reshape(-1, chain_flat.shape[-1])
-    flow_samples = np.asarray(model.sample(min(n_max, len(chain_flat)),
-                                           rng_key=jax.random.PRNGKey(seed)))
+    flow_samples = batched_sample(model, min(n_max, len(chain_flat)),
+                                  jax.random.PRNGKey(seed), batch_size=sample_batch_size)
 
     plot_flow_vs_chain(
         chain_flat, flow_samples, param_names, param_labels, plot_name,
