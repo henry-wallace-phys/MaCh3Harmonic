@@ -1,0 +1,35 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+*.ipynb_checkpoints*
+*.venv*
+notebooks/*logs*
+sbi-logs
+*_build*
+
+# Virtual environments
+.venv
+
+# Saved files etc
+*.out
+*.err
+*.pkl
+*.pdf
+*.feather
+*.arrow
+*.paraket
+*.root
+*.flow
+*.png
+
+*.DS_Store
+*.coverage
+*.idea
+uv.lock
+
+*tensor-logs*
+**/lightning_logs/*
