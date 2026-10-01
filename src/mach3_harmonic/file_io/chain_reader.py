@@ -35,14 +35,15 @@ def apply_cyclical_shift(arr, shift,lo, hi):
 class ChainReader:
     """Reads a MaCh3 posterior TTree in chunks of `step_size` (entries or e.g. "100 MB"),
     so the file never has to fit in memory. Only the selected entries (after burn-in,
-    thinning and any cut) of the kept branches are ever held in full.
+    max_entries, thinning and any cut) of the kept branches are ever held in full.
+    max_entries caps the steps read after burn-in; None reads to the end of the chain.
     """
     def __init__(self, markov_chain: Path, posterior_tree: str,
                 logl_branch: str = "logL", pars_to_ignore: list[str] | None = None,
                 cyclical_pars: list[str]|None=None, burn_in: int=0, thin: int=1,
-                step_size: int | str = DEFAULT_STEP_SIZE):
+                step_size: int | str = DEFAULT_STEP_SIZE, max_entries: int | None = None):
 
-        getLogger().info(f"Opening {posterior_tree} in {markov_chain} with burn_in={burn_in}, thin={thin}, step_size={step_size}")
+        getLogger().info(f"Opening {posterior_tree} in {markov_chain} with burn_in={burn_in}, max_entries={max_entries}, thin={thin}, step_size={step_size}")
 
         if not markov_chain.is_file():
             raise FileNotFoundError(f"Cannot find MCMC {markov_chain}")
@@ -68,11 +69,14 @@ class ChainReader:
             raise ValueError(f"burn_in ({burn_in}) must be in [0, {self._chain.num_entries})")
         if thin < 1:
             raise ValueError(f"thin must be >= 1, got {thin}")
+        if max_entries is not None and max_entries < 1:
+            raise ValueError(f"max_entries must be >= 1 or None, got {max_entries}")
 
         self._logl_branch = logl_branch
         self.burn_in = burn_in
         self.thin = thin
         self.step_size = step_size
+        self.entry_stop = self._chain.num_entries if max_entries is None else min(burn_in + max_entries, self._chain.num_entries)
 
         # Uncut, so every load uses the same shift
         self.cyclical_shifts = self._find_cyclical_shifts(
@@ -101,7 +105,7 @@ class ChainReader:
 
     @property
     def _n_after_burn_in(self) -> int:
-        return self._chain.num_entries - self.burn_in
+        return self.entry_stop - self.burn_in
 
     def _iterate(self, branches: list[str] | None = None, expressions: list[str] | None = None,
                  desc: str = "Reading chain"):
@@ -114,7 +118,7 @@ class ChainReader:
         with tqdm(total=self._n_after_burn_in, desc=desc, unit=" steps") as progress:
             for arrays, report in self._chain.iterate(
                 expressions, library="np", step_size=self.step_size,
-                entry_start=self.burn_in, report=True, **kwargs,
+                entry_start=self.burn_in, entry_stop=self.entry_stop, report=True, **kwargs,
             ):
                 yield arrays, slice(report.tree_entry_start - self.burn_in,
                                     report.tree_entry_stop - self.burn_in)

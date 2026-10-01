@@ -13,6 +13,7 @@ _DEFAULT_GLOBAL_CHAIN = {
     "logl_branch": "logL",
     "burn_in": 0,
     "thin": 1,
+    "max_entries": None,  # only read this many steps after burn-in (None = all)
     "step_size": "100 MB",  # chunk size when streaming the TTree (entries or bytes)
 }
 
