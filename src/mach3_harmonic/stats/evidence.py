@@ -213,7 +213,7 @@ def batched_sample(model, n: int, rng_key, batch_size: int = PREDICT_BATCH) -> n
     ]) if n > 0 else np.empty((0, model.ndim))
 
 
-def get_evidence(model, chains_infer: hm.Chains, shift: float = hm.evidence.Shifting.ABS_MAX,
+def get_evidence(model, chains_infer: hm.Chains, shift: float = hm.evidence.Shifting.ABS_MAX_SHIFT,
                  predict_batch_size: int = PREDICT_BATCH) -> hm.Evidence:
     """Evidence from a trained (or loaded) flow on the held-out chains."""
     _batch_predict(model, predict_batch_size)
