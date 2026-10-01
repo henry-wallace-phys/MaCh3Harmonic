@@ -151,8 +151,15 @@ class ChainReader:
             yield arrays, slice(pos, pos + n)
             pos += n
 
-    def _n_selected(self, mask: np.ndarray | None) -> int:
-        return self._n_after_burn_in if mask is None else int(mask.sum())
+    def _n_selected(self, mask: np.ndarray | None, cut: str | None = None) -> int:
+        n = self._n_after_burn_in if mask is None else int(mask.sum())
+        if n == 0:
+            raise ValueError(
+                f"No entries pass cut '{cut}' in steps [{self.burn_in}, {self.entry_stop}) "
+                f"(burn_in={self.burn_in}, thin={self.thin}, entry_stop={self.entry_stop}). "
+                "The chain may never visit that region in this window; try a larger max_entries."
+            )
+        return n
 
     def _find_cyclical_shifts(self, pars: list[str]) -> dict[str, float]:
         if not pars:
@@ -169,7 +176,7 @@ class ChainReader:
 
     def get_chain(self, cut: str|None=None):
         mask = self._entry_mask(cut)
-        n = self._n_selected(mask)
+        n = self._n_selected(mask, cut)
 
         # Filled in place: these are the only full-length arrays we hold
         samples = np.empty((1, n, self.ndim))
@@ -191,7 +198,7 @@ class ChainReader:
             raise ValueError(f"Cannot find {branch_name} in posteriors")
 
         mask = self._entry_mask(cut)
-        branch = np.empty(self._n_selected(mask))
+        branch = np.empty(self._n_selected(mask, cut))
         for arrays, out in self._stream([branch_name], mask, desc=f"Loading {branch_name}"):
             branch[out] = arrays[branch_name]
         return branch

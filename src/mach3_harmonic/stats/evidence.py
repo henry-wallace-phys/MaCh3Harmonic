@@ -27,6 +27,9 @@ def mach3_to_chain(samples, lnprob, ndim, nblocks: int = 100,
     harmonic's split is deterministic (first blocks train, the rest infer), so the
     same inputs always give the same split; save/load relies on that.
     """
+    if samples.shape[1] < nblocks:
+        raise ValueError(f"Only {samples.shape[1]} samples; need at least nblocks={nblocks} "
+                         "to split into training/inference blocks.")
     n_keep = samples.shape[1] // nblocks * nblocks
     chains = hm.Chains(ndim)
     chains.add_chains_3d(samples[:, :n_keep], lnprob[:, :n_keep])
