@@ -41,13 +41,18 @@ def single_flow_comp_cmd(yaml_config: dict):
                 )
         
         save_flow(model, f"{l}.flow", train_chain)
+        ln_inv_evidence = evidence.ln_evidence_inv
+        err_ln_inv_evidence = evidence.compute_ln_inv_evidence_errors()
+
+        
+        getLogger().info(f"Evidence for {l}: {ln_inv_evidence} ± {err_ln_inv_evidence}")
         evidence_list.append(evidence)
     
     # Now we can look at the Bayes factors
     mcmc_bayes = mcmc_bayes_factor(chain, param_to_cut, cut_value)
-    bayes, bayes_err = hm.evidence.compute_bayes_factor(evidence_list[1], evidence_list[0])
+    bayes, bayes_err = hm.evidence.compute_ln_bayes_factor(evidence_list[1], evidence_list[0])
     
     
     ratio = f"{cut_labels[1]}/{cut_labels[0]}"
-    getLogger().info(f"Harmonic Approximation BF ({ratio}): {bayes}±{bayes_err}")
-    getLogger().info(f"MCMC (Ratio) BF ({ratio}): {mcmc_bayes['bayes_factor']}±{mcmc_bayes['error']}")
+    getLogger().info(f"Harmonic Approximation ln(BF) ({ratio}): {bayes}±{bayes_err}")
+    getLogger().info(f"MCMC (Ratio) ln(BF) ({ratio}): {mcmc_bayes['bayes_factor']}±{mcmc_bayes['error']}")
