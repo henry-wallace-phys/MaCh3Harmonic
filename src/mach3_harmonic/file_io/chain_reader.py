@@ -41,6 +41,8 @@ class ChainReader:
                 cyclical_pars: list[str]|None=None, burn_in: int=0, thin: int=1,
                 step_size: int | str = DEFAULT_STEP_SIZE):
 
+        getLogger().info(f"Opening {posterior_tree} in {markov_chain} with burn_in={burn_in}, thin={thin}, step_size={step_size}")
+
         if not markov_chain.is_file():
             raise FileNotFoundError(f"Cannot find MCMC {markov_chain}")
 
