@@ -11,7 +11,9 @@ _DEFAULT_GLOBAL_CHAIN = {
     "pars_to_ignore": [],
     "cyclical_pars": [],
     "logl_branch": "logL",
-    "burn_in": 0
+    "burn_in": 0,
+    "thin": 1,
+    "step_size": "100 MB",  # chunk size when streaming the TTree (entries or bytes)
 }
 
 _DEFAULT_TRAINING = {
@@ -103,6 +105,7 @@ def run_inference(yaml_config, chain: ChainReader, cut: str|None, override_loss_
     samples, lnprob = chain.get_chain(cut)
     
     train_chain, infer_chain = mach3_to_chain(samples, lnprob, chain.ndim)
+    del samples, lnprob  # harmonic holds its own copies; don't keep ours through training
     
     model = train_flow(yaml_config, train_chain, ndim = chain.ndim, override_loss_plot=override_loss_plot)
     

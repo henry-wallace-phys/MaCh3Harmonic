@@ -8,6 +8,8 @@ Chains:
         
         logl_branch: logL
         burn_in: 1000
+        thin: 1             # keep every n-th step after burn-in
+        step_size: 100 MB   # chunk size when streaming the TTree (entries or bytes)
 
     files:
         my_chain:

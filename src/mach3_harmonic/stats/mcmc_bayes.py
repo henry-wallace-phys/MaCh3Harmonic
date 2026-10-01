@@ -26,9 +26,9 @@ def integrated_autocorr_time(x: np.ndarray, c: float = 5.0) -> float:
     return max(float(taus[window]), 1.0)
 
 
-def mcmc_bayes_factor(chain_reader: ChainReader, bayes_factor_var: str, cut_val: float, burn_in: int=0):
-    '''We're doing a simple var>cut_val'''
-    chain = chain_reader.get_single_branch(bayes_factor_var, burn_in=burn_in)
+def mcmc_bayes_factor(chain_reader: ChainReader, bayes_factor_var: str, cut_val: float):
+    '''We're doing a simple var>cut_val. Burn-in and thinning come from chain_reader.'''
+    chain = chain_reader.get_single_branch(bayes_factor_var)
     
     n = len(chain)
     
