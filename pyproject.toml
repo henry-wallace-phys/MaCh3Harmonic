@@ -1,0 +1,44 @@
+[project]
+name = "mach3_harmonic"
+version = "1.0.0"
+description = "Interface between harmonic and MaCh3"
+readme = "README.md"
+requires-python = ">=3.11"
+
+
+dependencies = [
+    "jax",
+    "harmonic",
+    "getdist",
+    "matplotlib",
+    "numpy",
+    "uproot",
+    "tqdm",
+    "rich",
+    "ruff",
+    "mypy"
+]
+
+
+[project.scripts]
+mach3harmonic = "mach3_harmonic.apps.main_cli:cli"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # check for errors using PyFlakes
+    "I",    # best practices for import calls
+    "UP",   # suggestions for code modernization
+    "RUF",  # build in Ruff warnings
+    "R",    # refactoring suggestions
+]
+ignore = [
+    "E501", # Don't enforce line lengths within a linting context
+]
+allowed-confusables = ["σ", "α"] # We need sigmas
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = ["build"]

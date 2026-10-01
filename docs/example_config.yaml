@@ -1,0 +1,54 @@
+Chains:
+    global:
+        pars_to_ignore:
+            - logL*
+            - step*
+        cyclical_pars:
+            - delta_cp
+        
+        logl_branch: logL
+        burn_in: 1000
+
+    files:
+        my_chain:
+          chain_path: my_chain.root
+          posterior_tree: posteriors
+
+          # Additional arguments to add to global   
+          pars_to_ignore:
+            - prod_height
+
+        my_other_chain:
+          chain_path: my_other_chain.root
+          posterior_tree: posterior
+          pars_to_ignore:
+            - ye
+
+Flows:
+    file_io:
+        flow_path: my_flow.flow
+        loss_path: my_losses.pdf
+    training:
+        epochs_num: 50
+        temperature: 1.0
+        early_stopping: 20
+        learning_rate: 1e-4
+        batch_size: 4096
+    ensemble:
+        train_ensemble: false
+        n_ensemble: 5
+
+Evidence:
+    seed: 0
+    n_samples: 1000000
+
+Plotting:
+    cis: [0.68, 0.95, 0.996]
+    flow_label: "Normalising Flow"
+
+# Specific experiment settings
+SingleFlowComp:
+    chain_label: my_chain # taken from chains.files
+    param_to_cut: "delm2_23"
+    cut_value: 0
+    labels: ["IO", "NO"]
