@@ -134,11 +134,16 @@ def load_flow(path, chains_train: hm.Chains | None = None):
 # Training
 # --------------------------------------------------------------------------- #
 
-def plot_losses(losses: np.ndarray, plot_name: str):
+def plot_losses(losses, plot_name, val_losses=None, best_epoch=None):
     fig, ax = plt.subplots(1)
-    ax.plot(losses)
+    ax.plot(losses, label="train")
+    if val_losses is not None:
+        ax.plot(val_losses, label="validation")
+    if best_epoch is not None:
+        ax.axvline(best_epoch, ls=":", c="grey", label="best")
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
+    ax.legend()
     fig.savefig(f"loss_{plot_name}")
     plt.close(fig)
 
@@ -148,7 +153,7 @@ def train_model(chains_train: hm.Chains, ndim: int, epochs_num: int=20,
                 learning_rate: float = 1e-4, batch_size: int = 4096, decay_rate: float = 0.95,
                 lr_decay: bool = True, min_lr_fraction: float = 0.0001,
                 flow_path: str | Path | None = None, loss_path: str|None=None,
-                hidden_size: list[int] = [64, 64, 64, 64, 64]) -> hm.model.RQSplineModel:
+                hidden_size: list[int] = [64, 64, 64, 64, 64], validation_fraction: float =0.2) -> hm.model.RQSplineModel:
     """Train an RQ-spline flow, or load it from flow_path if already trained.
 
     Returns (model, losses). Losses are stored in the sidecar, so a loaded flow
@@ -170,7 +175,9 @@ def train_model(chains_train: hm.Chains, ndim: int, epochs_num: int=20,
         temperature=temperature, decay_rate=decay_rate, lr_decay=lr_decay_algo, min_lr_fraction=min_lr_fraction
     )
     losses = np.asarray(model.fit(chains_train.samples, epochs=epochs_num, verbose=True,
-                                  early_stopping=early_stopping, batch_size=batch_size))
+                                early_stopping=early_stopping, batch_size=batch_size,
+                                validation_fraction=validation_fraction))
+    val_losses = model.val_losses
 
     if flow_path is not None:
         save_flow(
@@ -188,7 +195,7 @@ def train_model(chains_train: hm.Chains, ndim: int, epochs_num: int=20,
         )
     
     if loss_path is not None:
-        plot_losses(losses, loss_path)
+        plot_losses(losses, loss_path, val_losses=val_losses, best_epoch=model.best_epoch)
 
     return model
 
@@ -290,3 +297,20 @@ def sample_evidence_weighted_flows(
                          draw(model_io, n_io, -1, "IO", key_io)) if p is not None]
     mix = np.concatenate(parts)
     return mix[rng.permutation(len(mix))], w_no
+
+
+
+def ln_bayes_factor(ev1: hm.Evidence, ev2: hm.Evidence) -> tuple[float, float]:
+    """ln(Z1/Z2) and its 1σ error, computed entirely in log space.
+
+    Same estimator as hm.evidence.compute_ln_bayes_factor (including its
+    bias correction), but never exponentiates the raw ln ρ values.
+    """
+    ln_r1 = np.float64(ev1.ln_evidence_inv)
+    ln_r2 = np.float64(ev2.ln_evidence_inv)
+    rel_var1 = np.exp(np.float64(ev1.ln_evidence_inv_var) - 2 * ln_r1)  # σ²_ρ / ρ²
+    rel_var2 = np.exp(np.float64(ev2.ln_evidence_inv_var) - 2 * ln_r2)
+
+    ln_bf = ln_r2 - ln_r1 + np.log1p(rel_var1)
+    ln_bf_err = np.sqrt(rel_var1 + rel_var2)
+    return float(ln_bf), float(ln_bf_err)

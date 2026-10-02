@@ -2,7 +2,7 @@
 
 from logging import getLogger
 from .config_helpers import load_chain, run_inference
-from mach3_harmonic.stats import save_flow, mcmc_bayes_factor
+from mach3_harmonic.stats import save_flow, mcmc_bayes_factor, ln_bayes_factor
 from mach3_harmonic.plotting import plot_flow
 import harmonic as hm
 
@@ -50,9 +50,8 @@ def single_flow_comp_cmd(yaml_config: dict):
     
     # Now we can look at the Bayes factors
     mcmc_bayes = mcmc_bayes_factor(chain, param_to_cut, cut_value)
-    bayes, bayes_err = hm.evidence.compute_ln_bayes_factor(evidence_list[1], evidence_list[0])
-    
-    
+    bayes, bayes_err = ln_bayes_factor(evidence_list[1], evidence_list[0])
+
     ratio = f"{cut_labels[1]}/{cut_labels[0]}"
     getLogger().info(f"Harmonic Approximation ln(BF) ({ratio}): {bayes}±{bayes_err}")
     getLogger().info(f"MCMC (Ratio) ln(BF) ({ratio}): {mcmc_bayes['ln_bayes_factor']}±{mcmc_bayes['error']}")

@@ -27,7 +27,8 @@ _DEFAULT_TRAINING = {
     "lr_decay": True,
     "decay_rate": 0.95,
     "min_lr_fraction": 0.0001,
-    "hidden_size": [128, 128, 128, 128, 128]
+    "hidden_size": [128, 128, 128, 128, 128],
+    "validation_fraction": 0.2,
 }
 
 
