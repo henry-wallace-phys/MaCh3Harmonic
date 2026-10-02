@@ -30,7 +30,7 @@ def single_flow_comp_cmd(yaml_config: dict):
     
     for l, c in zip(cut_labels, cut_values):
         getLogger().info(f"Getting evidence for {l}")
-        train_chain, infer_chain, model, evidence = run_inference(yaml_config, chain, c, override_loss_plot=f"{l}_loss.pdf")
+        train_chain, infer_chain, model, evidence = run_inference(yaml_config, chain, c, override_label=l)
         
         plot_flow(model = model, 
                   chains = infer_chain,

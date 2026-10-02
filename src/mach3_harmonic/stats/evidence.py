@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 from matplotlib import pyplot as plt
 
 
-PREDICT_BATCH = 10_000  # flow intermediates scale with batch * ndim * n_bins; lower if the GPU OOMs
+PREDICT_BATCH = 5000
 FLOW_FORMAT_VERSION = 1
 
 
@@ -145,8 +145,10 @@ def plot_losses(losses: np.ndarray, plot_name: str):
 
 def train_model(chains_train: hm.Chains, ndim: int, epochs_num: int=20,
                 temperature: float = 0.8, early_stopping: int = 20,
-                learning_rate: float = 1e-4, batch_size: int = 4096,
-                flow_path: str | Path | None = None, retrain: bool = False, loss_path: str|None=None):
+                learning_rate: float = 1e-4, batch_size: int = 4096, decay_rate: float = 0.95,
+                lr_decay: bool = True, min_lr_fraction: float = 0.0001,
+                flow_path: str | Path | None = None, loss_path: str|None=None,
+                hidden_size: list[int] = [64, 64, 64, 64, 64]) -> hm.model.RQSplineModel:
     """Train an RQ-spline flow, or load it from flow_path if already trained.
 
     Returns (model, losses). Losses are stored in the sidecar, so a loaded flow
@@ -157,10 +159,15 @@ def train_model(chains_train: hm.Chains, ndim: int, epochs_num: int=20,
     """
     flow_path = Path(flow_path) if flow_path is not None else None
 
+    if lr_decay:
+        lr_decay_algo = hm.model.DecayType.EXPONENTIAL
+    else:
+        lr_decay_algo = None
+
     model = hm.model.RQSplineModel(
         ndim, learning_rate=learning_rate, standardize=True, n_bins=20,
-        hidden_size=[64, 64, 64, 64, 64], spline_range=(-10, 10),
-        temperature=temperature,
+        hidden_size=hidden_size, spline_range=(-10, 10),
+        temperature=temperature, decay_rate=decay_rate, lr_decay=lr_decay_algo, min_lr_fraction=min_lr_fraction
     )
     losses = np.asarray(model.fit(chains_train.samples, epochs=epochs_num, verbose=True,
                                   early_stopping=early_stopping, batch_size=batch_size))
@@ -173,6 +180,11 @@ def train_model(chains_train: hm.Chains, ndim: int, epochs_num: int=20,
             learning_rate=learning_rate,
             batch_size=batch_size,
             early_stopping=early_stopping,
+            decay_rate=decay_rate,
+            lr_decay=lr_decay,
+            min_lr_fraction=min_lr_fraction,
+            hidden_size=hidden_size,
+
         )
     
     if loss_path is not None:

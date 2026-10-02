@@ -24,6 +24,10 @@ _DEFAULT_TRAINING = {
     "early_stopping": 20,
     "learning_rate": 1e-4,
     "batch_size": 4096,
+    "lr_decay": True,
+    "decay_rate": 0.95,
+    "min_lr_fraction": 0.0001,
+    "hidden_size": [128, 128, 128, 128, 128]
 }
 
 
@@ -92,27 +96,28 @@ def load_chain(yaml_config: dict, chain_labels: list[str] | str | None = None) -
 
     return chains
 
-def train_flow(yaml_config, chain: hm.Chains, ndim: int, override_loss_plot: str|None=None):
+def train_flow(yaml_config, chain: hm.Chains, ndim: int, override_label: str|None=None):
     flow_settings = yaml_config.get("Flows")
 
     training_settings = _merge_settings(_DEFAULT_TRAINING, flow_settings.get('training', {}), _DEFAULT_TRAINING)
     
     file_io_settings = flow_settings.get('file_io', {})
-    training_settings["flow_path"] = file_io_settings.get("flow_path")
-    training_settings["loss_path"] = override_loss_plot or file_io_settings.get("loss_path")
+    training_settings["flow_path"] = f"flow_{override_label}.flow" if override_label else file_io_settings.get("flow_path")
+    training_settings["loss_path"] = f"loss_{override_label}.pdf" if override_label else file_io_settings.get("loss_path")
+    
     
     return train_model(chain, ndim, **training_settings)
 
-def run_inference(yaml_config, chain: ChainReader, cut: str|None, override_loss_plot: str|None=None):
+def run_inference(yaml_config, chain: ChainReader, cut: str|None, override_label: str|None=None):
     samples, lnprob = chain.get_chain(cut)
     
     train_chain, infer_chain = mach3_to_chain(samples, lnprob, chain.ndim)
     del samples, lnprob  # harmonic holds its own copies; don't keep ours through training
     
-    model = train_flow(yaml_config, train_chain, ndim = chain.ndim, override_loss_plot=override_loss_plot)
+    model = train_flow(yaml_config, train_chain, ndim = chain.ndim, override_label=override_label)
     
     # Now we get the evidence (get_evidence already adds infer_chain)
     predict_batch_size = (yaml_config.get("Evidence") or {}).get("predict_batch_size", PREDICT_BATCH)
-    evidence = get_evidence(model, infer_chain, predict_batch_size=predict_batch_size)
+    evidence = get_evidence(model, infer_chain, predict_batch_size=predict_batch_size, shift=hm.evidence.Shifting.ABS_MAX_SHIFT)
     
     return train_chain, infer_chain, model, evidence
